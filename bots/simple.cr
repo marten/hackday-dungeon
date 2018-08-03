@@ -2,7 +2,6 @@
 #
 require "json"
 
-
 class Entity
   JSON.mapping(
     id: String

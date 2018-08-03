@@ -10,10 +10,6 @@ executables:
 targets:
   robommo:
     main: src/robommo.cr
-  bot-nothing:
-    main: bots/nothing.cr
-  bot-simple:
-    main: bots/simple.cr
 
 crystal: 0.24.2
 
