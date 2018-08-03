@@ -1,0 +1,6 @@
+version: 1.0
+shards:
+  ANSI:
+    github: Sevensidedmarble/Crystal-ANSI
+    commit: 9b2c6ac551b5b906e85c74b1eba4db0721938f91
+
