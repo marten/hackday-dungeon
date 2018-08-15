@@ -1,6 +1,7 @@
 require "json"
 require "uuid"
 require "uuid/json"
+require "./coord"
 require "./scripts"
 require "./actions"
 
@@ -16,6 +17,10 @@ abstract class Entity
 
   abstract def next_action(world : World) : Action
   abstract def to_s
+
+  def collides_with?(other)
+    true
+  end
 end
 
 class Player < Entity
@@ -34,6 +39,10 @@ class Player < Entity
     end
   end
 
+  def clone
+    Player.new(@id, @coord, @script, @state.clone)
+  end
+
   def next_action(game_state)
     action_class = @script.run(game_state)
     action_class.new(self)
@@ -41,6 +50,18 @@ class Player < Entity
 
   def health
     @state[:health]
+  end
+
+  def health=(val)
+    @state = @state.merge({health: val})
+  end
+
+  def ducked
+    @state[:ducked]
+  end
+
+  def ducked=(val)
+    @state = @state.merge({ducked: val})
   end
 
   def update(changes)

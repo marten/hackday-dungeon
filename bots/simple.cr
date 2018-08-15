@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 #
 require "json"
+require "random"
 
 class Entity
   JSON.mapping(
@@ -10,14 +11,15 @@ end
 
 class World
   JSON.mapping(
-    age: Int32,
     entities: Hash(String, Entity)
   )
 end
 
 world = World.from_json(STDIN)
 
-if world.age % 2 == 0
+r = Random.new
+
+if r.next_bool
   puts "move_north"
 else
   puts "ranged_west"

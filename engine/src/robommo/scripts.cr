@@ -7,7 +7,7 @@ class Script
   end
 
   def run(state)
-    print "Calling #{@cmd} with #{state.to_json}"
+    # print "Calling #{@cmd} with #{state.to_json}"
 
     Process.run(@cmd) do |process|
       if !process.terminated?
@@ -22,12 +22,12 @@ class Script
           action = Action.from(output)
           return action
         else
-          puts "Errors: #{errors}"
-          return Action.from("nothing")
+          STDERR.puts "Errors: #{errors}"
+          return Action::ProgramError
         end
       else
-        puts "Process crashed"
-        return Action.from("nothing")
+        # puts "Process crashed"
+        return Action::ProgramError
       end
     end
 

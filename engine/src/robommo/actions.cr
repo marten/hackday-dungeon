@@ -1,6 +1,9 @@
 require "json"
 
 abstract class Action
+  COLLISION_DAMAGE = 10
+  OUT_OF_BOUNDS_DAMAGE = 5
+
   def self.from(string)
     case string
     when "nothing"
@@ -43,23 +46,45 @@ abstract class Action
     @entity
   end
 
-  abstract def act(world)
+  abstract def act(world) : Array(GameEvent)
 
   class Nothing < Action
     def act(world)
-      return world
+      [] of GameEvent
+    end
+  end
+
+  class ProgramError < Action
+    def act(world)
+      [GameEvent::ProgramError.new(entity)]
+    end
+  end
+
+  class Spawn < Action
+    def act(world)
+      world.update_entity(entity)
+
+      [GameEvent::Spawned.new(entity)]
     end
   end
 
   abstract class Move < Action
-    # TODO: bounds checking, collision checking, etc
     def move_to(world, coord)
+      from = entity.coord
+      entities_at_destination = world.at(coord)
+      collider = entities_at_destination.find { |other| entity.collides_with?(other) }
+
       if coord.inside?(world)
-        next_entity = entity.update({coord: coord})
-        world.update_entity(next_entity)
+        if collider
+          entity.update({health: entity.health - COLLISION_DAMAGE})
+          [GameEvent::Collision.new(entity, collider, COLLISION_DAMAGE)]
+        else
+          entity.update({coord: coord})
+          [GameEvent::Move.new(entity, from, coord)]
+        end
       else
-        next_entity = entity.update({health: entity.health - 1})
-        world.update_entity(next_entity)
+        entity.update({health: entity.health - OUT_OF_BOUNDS_DAMAGE})
+        [GameEvent::OutOfBounds.new(entity, OUT_OF_BOUNDS_DAMAGE)]
       end
     end
   end
@@ -90,77 +115,91 @@ abstract class Action
 
   class Duck < Action
     def act(world)
-      next_entity = entity.update({ducked: true})
-      world = world.update_entity(next_entity)
-      return world
+      if entity.is_a? Player
+        entity.ducked = true
+      end
+      [] of GameEvent
     end
   end
 
   abstract class Melee < Action
+    def attack(world, coords)
+      [] of GameEvent
+    end
   end
 
   class MeleeNorth < Melee
     def act(world)
-      return world
+      coords = [entity.coord.north]
+      attack(world, coords)
     end
   end
 
   class MeleeEast < Melee
     def act(world)
-      return world
+      coords = [entity.coord.east]
+      attack(world, coords)
     end
   end
 
   class MeleeSouth < Melee
     def act(world)
-      return world
+      coords = [entity.coord.south]
+      attack(world, coords)
     end
   end
 
   class MeleeWest < Melee
     def act(world)
-      return world
+      coords = [entity.coord.west]
+      attack(world, coords)
     end
   end
 
   abstract class Ranged < Action
+    def attack(world, hit_entities)
+      coords = [] of Coord
+      hits = [] of GameEvent::RangedHit
+
+      if hit_entities.any?
+        hit_entity = hit_entities.first
+
+        if hit_entity.is_a?(Player)
+          damage = entity.ranged_weapon.damage
+          hit_entity.health -= damage
+          hits << {entity: entity, damage: damage}
+        end
+      end
+
+      [GameEvent::Ranged.new(@entity, coords, hits)]
+    end
   end
 
   class RangedNorth < Ranged
     def act(world)
-      return world
+      hit_entities = world.hitscan(entity.coord, Direction::North)
+      attack(world, hit_entities)
     end
   end
 
   class RangedEast < Ranged
     def act(world)
-      return world
+      hit_entities = world.hitscan(entity.coord, Direction::East)
+      attack(world, hit_entities)
     end
   end
 
   class RangedSouth < Ranged
     def act(world)
-      return world
+      hit_entities = world.hitscan(entity.coord, Direction::South)
+      attack(world, hit_entities)
     end
   end
 
   class RangedWest < Ranged
     def act(world)
       hit_entities = world.hitscan(entity.coord, Direction::West)
-      print "Player #{entity.id} uses #{entity.ranged_weapon.class} "
-
-      if hit_entities.any?
-        hit_entity = hit_entities.first
-        damage = entity.ranged_weapon.damage
-        new_health = hit_entity.health - damage
-
-        puts "and hits #{hit_entity.id}, new health: #{new_health}"
-        hit_entity = hit_entity.update({health: new_health})
-        world.update_entity(hit_entity)
-      else
-        puts "but hits nothing"
-        world
-      end
+      attack(world, hit_entities)
     end
   end
 end

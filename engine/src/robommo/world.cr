@@ -3,10 +3,13 @@ class World
 
   property width : Int32
   property height : Int32
-  property age : Int32
   property entities : Hash(UUID, Entity)
 
-  def initialize(@width, @height, @age = 0, @entities = {} of UUID => Entity)
+  def initialize(@width, @height, @entities = {} of UUID => Entity)
+  end
+
+  def clone
+    World.new(@width, @height, @entities.clone)
   end
 
   def entities
@@ -38,13 +41,7 @@ class World
   end
 
   def update_entity(entity)
-    next_entities = @entities.dup
-    next_entities[entity.id] = entity
-    World.new(@width, @height, @age, next_entities)
-  end
-
-  def increase_age
-    World.new(@width, @height, @age + 1, @entities)
+    @entities[entity.id] = entity
   end
 
   def step
@@ -54,8 +51,6 @@ class World
     actions.each do |action|
       world = action.act(world)
     end
-
-    world.increase_age
   end
 
   def collect_actions
