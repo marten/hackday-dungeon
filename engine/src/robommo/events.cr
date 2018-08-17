@@ -60,7 +60,7 @@ class GameEvent
     end
 
     def as_json
-      {type: "collide", entity: @entity.id, damage: @damage}
+      {type: "out_of_bounds", entity: @entity.id, damage: @damage}
     end
   end
 

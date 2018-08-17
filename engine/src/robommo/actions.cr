@@ -63,7 +63,6 @@ abstract class Action
   class Spawn < Action
     def act(world)
       world.update_entity(entity)
-
       [GameEvent::Spawned.new(entity)]
     end
   end
@@ -76,14 +75,14 @@ abstract class Action
 
       if coord.inside?(world)
         if collider
-          entity.update({health: entity.health - COLLISION_DAMAGE})
+          entity.health = entity.health - COLLISION_DAMAGE
           [GameEvent::Collision.new(entity, collider, COLLISION_DAMAGE)]
         else
-          entity.update({coord: coord})
+          entity.move_to(coord)
           [GameEvent::Move.new(entity, from, coord)]
         end
       else
-        entity.update({health: entity.health - OUT_OF_BOUNDS_DAMAGE})
+        entity.health = entity.health - OUT_OF_BOUNDS_DAMAGE
         [GameEvent::OutOfBounds.new(entity, OUT_OF_BOUNDS_DAMAGE)]
       end
     end

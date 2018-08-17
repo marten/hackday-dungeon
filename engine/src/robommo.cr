@@ -16,8 +16,8 @@ class GameEngine
     @match.add_round(round)
 
     number_of_rounds.times do
-      round = Round.new(round.number + 1, round.final_world)
-      actions = @match.players.map { |bot| bot.next_action(round.initial_world) }
+      round = round.next_round
+      actions = round.entities.map { |entity| entity.next_action(round.initial_world) }
       actions = sort(actions)
       actions.each do |action|
         round.process_action(action)
@@ -72,12 +72,16 @@ class Round
   property initial_world : World
   property number : Int32
   property events : Array(GameEvent)
-  @[JSON::Field(ignore: true)]
   property world : World
 
-  def initialize(@number, @initial_world)
-    @world = @initial_world.clone
+  def initialize(@number, world)
+    @initial_world = world.clone
+    @world = world.clone
     @events = [] of GameEvent
+  end
+
+  def entities
+    @world.entities
   end
 
   def process_action(action : Action)
@@ -85,8 +89,12 @@ class Round
     @events.concat(new_events)
   end
 
+  def next_round
+    Round.new(@number + 1, @world.clone)
+  end
+
   def final_world
-    @world
+    @world.clone
   end
 end
 
@@ -100,15 +108,15 @@ end
 map = Map.new(10, 10)
 
 players = [
-  Player.new(UUID.random, Coord.new(2, 2), "bin/bot-nothing"),
-  Player.new(UUID.random, Coord.new(2, 2), "bin/bot-nothing"),
-  Player.new(UUID.random, Coord.new(2, 2), "bin/bot-simple")
+#  Player.new(UUID.random, Coord.new(2, 2), "bin/bot-nothing"),
+#  Player.new(UUID.random, Coord.new(2, 4), "bin/bot-nothing"),
+  Player.new(UUID.random, Coord.new(7, 3), "bin/bot-simple")
 ]
 
 match = Match.new(map, players)
 
 engine = GameEngine.new(match)
-engine.simulate(2)
+engine.simulate(20)
 
 puts
 puts match.to_json
