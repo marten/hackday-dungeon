@@ -110,9 +110,9 @@ module Actions
 
       aimed_coords.each do |coord|
         hit_entities = yield(coord)
+        hit_entity = find_first_hit(hit_entities)
 
-        if hit_entities.any?
-          hit_entity = find_first_hit(hit_entities)
+        if hit_entity
           coords << hit_entity.coord
 
           if hit_entity.is_a?(Player)
