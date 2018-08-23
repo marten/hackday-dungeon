@@ -1,5 +1,5 @@
 require "json"
-require "./entities"
+require "./base_types"
 
 class GameEvent
   def as_json
@@ -64,10 +64,18 @@ class GameEvent
     end
   end
 
+  class Death < GameEvent
+    def initialize(@entity : Entity, @killed_by : Entity)
+    end
+
+    def as_json
+      {type: "death", entity: @entity.id, killed_by: @killed_by.id}
+    end
+  end
+
+  alias Hit = {entity: ID, damage: Int32}
 
   class Melee < GameEvent
-    alias Hit = {entity: ID, damage: Int32}
-
     def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(Hit))
     end
 
@@ -76,10 +84,7 @@ class GameEvent
     end
   end
 
-
   class Ranged < GameEvent
-    alias Hit = {entity: ID, damage: Int32}
-
     def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(Hit))
     end
 

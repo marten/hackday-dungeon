@@ -1,6 +1,6 @@
-require "./robommo/*"
 require "json"
 require "uuid"
+require "./robommo/world"
 
 class GameEngine
   def initialize(@match : Match)
@@ -17,7 +17,7 @@ class GameEngine
 
     number_of_rounds.times do
       round = round.next_round
-      actions = round.entities.map { |entity| entity.next_action(round.initial_world) }
+      actions = round.entities.flat_map { |entity| entity.next_actions(round.initial_world) }
       actions = sort(actions)
       actions.each do |action|
         round.process_action(action)

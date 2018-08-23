@@ -1,11 +1,12 @@
 require "json"
 require "uuid"
 require "uuid/json"
+require "./base_types"
 require "./coord"
 require "./scripts"
 require "./actions"
-
-alias ID = UUID
+require "./melee_weapons"
+require "./ranged_weapons"
 
 abstract class Entity
   include JSON::Serializable
@@ -17,7 +18,7 @@ abstract class Entity
   def initialize(@id : ID, @coord)
   end
 
-  abstract def next_action(world : World) : Action
+  abstract def next_actions(world : World) : Array(Action)
   abstract def to_s
 
   def move_to(coord : Coord)
@@ -35,11 +36,14 @@ class Player < Entity
 
   property health : Int32 = 100
   property ducked : Bool = false
-  property(melee_weapon) { Sword.new }
-  property(ranged_weapon) { Bow.new }
+
+  @melee_weapon : MeleeWeapon
+  @ranged_weapon : RangedWeapon
 
   def initialize(@id, @coord, script, @health = 100, @ducked = false)
     super(@id, @coord)
+    @melee_weapon = Sword.new
+    @ranged_weapon = Bow.new
     if script.is_a?(Script)
       @script = script
     else
@@ -47,12 +51,25 @@ class Player < Entity
     end
   end
 
+  def melee_weapon
+    @melee_weapon
+  end
+
+  def ranged_weapon
+    @ranged_weapon
+  end
+
+  def dead?
+    @health <= 0
+  end
+
   def clone
     Player.new(@id, @coord, @script, health, ducked)
   end
 
-  def next_action(game_state)
-    action_class = @script.run(game_state)
-    action_class.new(self)
+  def next_actions(world) : Array(Action)
+    return [] of Action if dead?
+
+    @script.run(world, self)
   end
 end

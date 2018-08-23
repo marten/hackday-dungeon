@@ -1,3 +1,7 @@
+require "json"
+require "./base_types"
+require "./entities"
+
 class World
   include JSON::Serializable
 

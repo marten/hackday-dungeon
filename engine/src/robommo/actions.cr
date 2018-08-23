@@ -5,41 +5,6 @@ abstract class Action
   COLLISION_DAMAGE = 10
   OUT_OF_BOUNDS_DAMAGE = 5
 
-  def self.from(string)
-    case string
-    when "nothing"
-      Action::Nothing
-    when "move_north"
-      Action::MoveNorth
-    when "move_east"
-      Action::MoveEast
-    when "move_south"
-      Action::MoveSouth
-    when "move_west"
-      Action::MoveWest
-    when "duck"
-      Action::Duck
-    when "melee_north"
-      Action::MeleeNorth
-    when "melee_east"
-      Action::MeleeEast
-    when "melee_south"
-      Action::MeleeSouth
-    when "melee_west"
-      Action::MeleeWest
-    when "ranged_north"
-      Action::RangedNorth
-    when "ranged_east"
-      Action::RangedEast
-    when "ranged_south"
-      Action::RangedSouth
-    when "ranged_west"
-      Action::RangedWest
-    else
-      Action::Nothing
-    end
-  end
-
   def initialize(@entity : Entity)
   end
 
@@ -125,9 +90,10 @@ abstract class Action
   end
 
   abstract class AttackAction(T) < Action
-    def attack_with(world, aimed_coords)
+    def attack_with(world, aimed_coords, weapon)
       coords = [] of Coord
       hits = [] of T::Hit
+      deaths = [] of GameEvent::Death
 
       aimed_coords.each do |coord|
         hit_entities = yield(coord)
@@ -137,8 +103,13 @@ abstract class Action
           coords << coord
 
           if hit_entity.is_a?(Player)
-            damage = entity.melee_weapon.damage
+            damage = weapon.damage
             hit_entity.health -= damage
+
+            if hit_entity.dead?
+              deaths << GameEvent::Death.new(hit_entity, killed_by: entity)
+            end
+
             hits << {entity: hit_entity.id, damage: damage}
           end
         else
@@ -146,14 +117,13 @@ abstract class Action
         end
       end
 
-      [T.new(@entity, coords, hits)]
+      ([T.new(@entity, coords, hits)] of GameEvent).concat(deaths)
     end
   end
 
-
   abstract class Melee < AttackAction(GameEvent::Melee)
-    def attack(world, aimed_coords)
-      attack_with(world, aimed_coords) do |coord|
+    def attack(world, aimed_coords : Array(Coord))
+      attack_with(world, aimed_coords, entity.melee_weapon) do |coord|
         world.at(coord)
       end
     end
@@ -161,7 +131,7 @@ abstract class Action
 
   abstract class Ranged < AttackAction(GameEvent::Ranged)
     def attack(world, aimed_coords : Array(Coord))
-      attack_with(world, aimed_coords) do |coord|
+      attack_with(world, aimed_coords, entity.ranged_weapon) do |coord|
         world.hitscan(@entity.coord, coord)
       end
     end

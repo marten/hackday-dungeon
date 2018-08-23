@@ -1,9 +1,9 @@
-class RangedWeapon
+abstract class RangedWeapon
   include JSON::Serializable
 end
 
 class Bow < RangedWeapon
-  getter damage = 10
+  getter damage = 100
 
   def aim_north(world : World, from : Coord)
     [Coord.new(from.x, 0)]
