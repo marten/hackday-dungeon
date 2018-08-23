@@ -5,14 +5,16 @@ require "./coord"
 require "./scripts"
 require "./actions"
 
+alias ID = UUID
+
 abstract class Entity
   include JSON::Serializable
   include JSON::Serializable::Strict
 
-  property id : UUID
+  property id : ID
   property coord : Coord
 
-  def initialize(@id : UUID, @coord)
+  def initialize(@id : ID, @coord)
   end
 
   abstract def next_action(world : World) : Action

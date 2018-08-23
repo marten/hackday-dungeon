@@ -3,9 +3,9 @@ class World
 
   property width : Int32
   property height : Int32
-  property entities : Hash(UUID, Entity)
+  property entities : Hash(ID, Entity)
 
-  def initialize(@width, @height, @entities = {} of UUID => Entity)
+  def initialize(@width, @height, @entities = {} of ID => Entity)
   end
 
   def clone
@@ -22,7 +22,15 @@ class World
     end
   end
 
-  def hitscan(coord : Coord, direction : Direction)
+  def hitscan(from : Coord, to : Coord) : Array(Entity)
+    coords = from.to(to)
+
+    coords.flat_map do |coord|
+      at(coord)
+    end
+  end
+
+  def hitscan(coord : Coord, direction : Direction) : Array(Entity)
     coord = coord.neighbour(direction)
     entities = at(coord)
 

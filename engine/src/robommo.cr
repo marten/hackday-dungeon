@@ -108,9 +108,9 @@ end
 map = Map.new(10, 10)
 
 players = [
-  Player.new(UUID.random, Coord.new(2, 2), "bin/bot-nothing"),
-  Player.new(UUID.random, Coord.new(2, 4), "bin/bot-nothing"),
-  Player.new(UUID.random, Coord.new(7, 3), "bin/bot-simple")
+  Player.new(UUID.random, Coord.new(2, 2), "../bots/nothing"),
+  Player.new(UUID.random, Coord.new(2, 4), "../bots/nothing"),
+  Player.new(UUID.random, Coord.new(7, 3), "../bots/simple")
 ]
 
 match = Match.new(map, players)

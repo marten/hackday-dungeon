@@ -64,7 +64,7 @@ class GameEvent
     end
   end
 
-  alias MeleeHit = {entity: Entity, damage: Int32}
+  alias MeleeHit = {entity: ID, damage: Int32}
 
   class Melee < GameEvent
     def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(MeleeHit))
@@ -75,7 +75,7 @@ class GameEvent
     end
   end
 
-  alias RangedHit = {entity: Entity, damage: Int32}
+  alias RangedHit = {entity: ID, damage: Int32}
 
   class Ranged < GameEvent
     def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(MeleeHit))

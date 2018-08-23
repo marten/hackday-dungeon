@@ -122,51 +122,77 @@ abstract class Action
   end
 
   abstract class Melee < Action
-    def attack(world, coords)
-      [] of GameEvent
+    def attack(world, aimed_coords)
+      coords = [] of Coord
+      hits = [] of GameEvent::MeleeHit
+
+
+      aimed_coords.each do |coord|
+        hit_entities = world.at(coord)
+        coords << coord
+
+        if hit_entities.any?
+          hit_entity = hit_entities.first
+
+          if hit_entity.is_a?(Player)
+            damage = entity.melee_weapon.damage
+            hit_entity.health -= damage
+            hits << {entity: hit_entity.id, damage: damage}
+          end
+        end
+      end
+
+      [GameEvent::Melee.new(@entity, coords, hits)]
     end
   end
 
   class MeleeNorth < Melee
     def act(world)
-      coords = [entity.coord.north]
+      coords = entity.melee_weapon.aim_north(world, @entity.coord)
       attack(world, coords)
     end
   end
 
   class MeleeEast < Melee
     def act(world)
-      coords = [entity.coord.east]
+      coords = entity.melee_weapon.aim_east(world, @entity.coord)
       attack(world, coords)
     end
   end
 
   class MeleeSouth < Melee
     def act(world)
-      coords = [entity.coord.south]
+      coords = entity.melee_weapon.aim_south(world, @entity.coord)
       attack(world, coords)
     end
   end
 
   class MeleeWest < Melee
     def act(world)
-      coords = [entity.coord.west]
+      coords = entity.melee_weapon.aim_west(world, @entity.coord)
       attack(world, coords)
     end
   end
 
   abstract class Ranged < Action
-    def attack(world, hit_entities)
+    def attack(world, aimed_coords : Array(Coord))
       coords = [] of Coord
       hits = [] of GameEvent::RangedHit
 
-      if hit_entities.any?
-        hit_entity = hit_entities.first
+      aimed_coords.each do |coord|
+        hit_entities = world.hitscan(@entity.coord, coord)
 
-        if hit_entity.is_a?(Player)
-          damage = entity.ranged_weapon.damage
-          hit_entity.health -= damage
-          hits << {entity: entity, damage: damage}
+        if hit_entities.any?
+          hit_entity = hit_entities.first
+          coords << hit_entity.coord
+
+          if hit_entity.is_a?(Player)
+            damage = entity.ranged_weapon.damage
+            hit_entity.health -= damage
+            hits << {entity: hit_entity.id, damage: damage}
+          end
+        else
+          coords << coord
         end
       end
 
@@ -176,29 +202,25 @@ abstract class Action
 
   class RangedNorth < Ranged
     def act(world)
-      hit_entities = world.hitscan(entity.coord, Direction::North)
-      attack(world, hit_entities)
+      attack(world, @entity.ranged_weapon.aim_north(world, @entity.coord))
     end
   end
 
   class RangedEast < Ranged
     def act(world)
-      hit_entities = world.hitscan(entity.coord, Direction::East)
-      attack(world, hit_entities)
+      attack(world, @entity.ranged_weapon.aim_east(world, @entity.coord))
     end
   end
 
   class RangedSouth < Ranged
     def act(world)
-      hit_entities = world.hitscan(entity.coord, Direction::South)
-      attack(world, hit_entities)
+      attack(world, @entity.ranged_weapon.aim_south(world, @entity.coord))
     end
   end
 
   class RangedWest < Ranged
     def act(world)
-      hit_entities = world.hitscan(entity.coord, Direction::West)
-      attack(world, hit_entities)
+      attack(world, @entity.ranged_weapon.aim_west(world, @entity.coord))
     end
   end
 end

@@ -1,1 +1,1 @@
-crystal src/robommo.cr | jq
+crystal src/robommo.cr | ../ui-tty/ui-tty.rb

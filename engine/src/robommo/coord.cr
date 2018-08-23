@@ -15,6 +15,59 @@ class Coord
     @x >= 0 && @x < world.width && @y >= 0 && @y < world.height
   end
 
+  def to(other : Coord) : Array(Coord)
+    x0 = x
+    y0 = y
+    x1 = other.x
+    y1 = other.y
+    coords = [] of Coord
+
+    steep = ((y1-y0).abs) > ((x1-x0).abs)
+
+    if steep
+      x0,y0 = y0,x0
+      x1,y1 = y1,x1
+    end
+
+    if x0 > x1
+      x0,x1 = x1,x0
+      y0,y1 = y1,y0
+    end
+
+    deltax = x1-x0
+    deltay = (y1-y0).abs
+    error = (deltax / 2).to_i
+    curr_y = y0
+    ystep = nil
+
+    if y0 < y1
+      ystep = 1
+    else
+      ystep = -1
+    end
+
+    (x0..x1).each do |curr_x|
+      next if curr_x == x && curr_y == y
+      if steep
+        coords << Coord.new(curr_y, curr_x) #{:x => y, :y => x}
+      else
+        coords << Coord.new(curr_x, curr_y) #{:x => x, :y => y}
+      end
+
+      error -= deltay
+      if error < 0
+        curr_y += ystep
+        error += deltax
+      end
+    end
+
+    if other.x < x
+      coords.reverse
+    else
+      coords
+    end
+  end
+
   def neighbour(direction : Direction) : Coord
     case direction
     when Direction::North then north()
