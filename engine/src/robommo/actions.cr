@@ -1,39 +1,44 @@
 require "json"
 require "./events"
 
-abstract class Action
-  COLLISION_DAMAGE = 10
-  OUT_OF_BOUNDS_DAMAGE = 50
-
-  def initialize(@entity : Entity)
+module Actions
+  abstract class Base
   end
 
-  def entity
-    @entity
+  abstract class PlayerAction < Base
+    COLLISION_DAMAGE = 10
+    OUT_OF_BOUNDS_DAMAGE = 50
+
+    def initialize(@entity : Player)
+    end
+
+    def entity
+      @entity
+    end
+
+    abstract def act(world) : Array(GameEvent)
   end
 
-  abstract def act(world) : Array(GameEvent)
-
-  class Nothing < Action
+  class Nothing < PlayerAction
     def act(world)
       [] of GameEvent
     end
   end
 
-  class ProgramError < Action
+  class ProgramError < PlayerAction
     def act(world)
       [GameEvent::ProgramError.new(entity)]
     end
   end
 
-  class Spawn < Action
+  class Spawn < PlayerAction
     def act(world)
       world.update_entity(entity)
       [GameEvent::Spawned.new(entity)]
     end
   end
 
-  abstract class Move < Action
+  abstract class Move < PlayerAction
     def move_to(world, coord)
       from = entity.coord
       entities_at_destination = world.at(coord)
@@ -86,7 +91,7 @@ abstract class Action
     end
   end
 
-  class Duck < Action
+  class Duck < PlayerAction
     def act(world)
       if entity.is_a? Player
         entity.ducked = true
@@ -97,7 +102,7 @@ abstract class Action
     end
   end
 
-  abstract class AttackAction(T) < Action
+  abstract class AttackAction(T) < PlayerAction
     def attack_with(world, aimed_coords, weapon)
       coords = [] of Coord
       hits = [] of T::Hit
@@ -108,7 +113,7 @@ abstract class Action
 
         if hit_entities.any?
           hit_entity = find_first_hit(hit_entities)
-          coords << coord
+          coords << hit_entity.coord
 
           if hit_entity.is_a?(Player)
             damage = weapon.damage
@@ -127,17 +132,21 @@ abstract class Action
 
       ([T.new(@entity, coords, hits)] of GameEvent).concat(deaths)
     end
-    
+
     abstract def find_first_hit(hit_entities)
   end
 
   abstract class Melee < AttackAction(GameEvent::Melee)
     def attack(world, aimed_coords : Array(Coord))
-      attack_with(world, aimed_coords, entity.melee_weapon) do |coord|
-        world.at(coord)
+      if entity.is_a?(Player)
+        attack_with(world, aimed_coords, entity.melee_weapon) do |coord|
+          world.at(coord)
+        end
+      else
+        [] of GameEvent
       end
     end
-    
+
     def find_first_hit(hit_entities)
       hit_entities.find { |ent| ent.alive? }
     end
@@ -145,18 +154,25 @@ abstract class Action
 
   abstract class Ranged < AttackAction(GameEvent::Ranged)
     def attack(world, aimed_coords : Array(Coord))
-      attack_with(world, aimed_coords, entity.ranged_weapon) do |coord|
-        world.hitscan(@entity.coord, coord)
+      if entity.is_a?(Player)
+        attack_with(world, aimed_coords, entity.ranged_weapon) do |coord|
+          world.hitscan(@entity.coord, coord)
+        end
+      else
+        [] of GameEvent
       end
     end
-    
+
     def find_first_hit(hit_entities)
-      hit_entities.find { |ent| ent.alive? && !ent.ducked? }
+      hit_entities.find do |entity| 
+        entity.alive? && (entity.is_a?(Player) && !entity.ducked?)
+      end
     end
   end
 
   class MeleeNorth < Melee
     def act(world)
+      return [] of GameEvent unless @entity.is_a?(Player)
       coords = entity.melee_weapon.aim_north(world, @entity.coord)
       attack(world, coords)
     end
@@ -164,6 +180,7 @@ abstract class Action
 
   class MeleeEast < Melee
     def act(world)
+      return [] of GameEvent unless @entity.is_a?(Player)
       coords = entity.melee_weapon.aim_east(world, @entity.coord)
       attack(world, coords)
     end
@@ -171,6 +188,7 @@ abstract class Action
 
   class MeleeSouth < Melee
     def act(world)
+      return [] of GameEvent unless @entity.is_a?(Player)
       coords = entity.melee_weapon.aim_south(world, @entity.coord)
       attack(world, coords)
     end
@@ -178,6 +196,7 @@ abstract class Action
 
   class MeleeWest < Melee
     def act(world)
+      return [] of GameEvent unless @entity.is_a?(Player)
       coords = entity.melee_weapon.aim_west(world, @entity.coord)
       attack(world, coords)
     end
@@ -185,25 +204,32 @@ abstract class Action
 
   class RangedNorth < Ranged
     def act(world)
+      return [] of GameEvent unless @entity.is_a?(Player)
       attack(world, @entity.ranged_weapon.aim_north(world, @entity.coord))
     end
   end
 
   class RangedEast < Ranged
     def act(world)
+      return [] of GameEvent unless @entity.is_a?(Player)
       attack(world, @entity.ranged_weapon.aim_east(world, @entity.coord))
     end
   end
 
   class RangedSouth < Ranged
     def act(world)
+      return [] of GameEvent unless @entity.is_a?(Player)
       attack(world, @entity.ranged_weapon.aim_south(world, @entity.coord))
     end
   end
 
   class RangedWest < Ranged
     def act(world)
-      attack(world, @entity.ranged_weapon.aim_west(world, @entity.coord))
+      if @entity.is_a?(Player)
+        attack(world, @entity.ranged_weapon.aim_west(world, @entity.coord))
+      else
+        [] of GameEvent
+      end
     end
   end
 end

@@ -103,7 +103,13 @@ end
 
 def render(ents)
   return "  " if ents.size == 0
-  BOT_SYMBOL
+
+  case ents.first['what']
+  when 'Player'
+    BOT_SYMBOL
+  when 'Wall'
+    "XX"
+  end
 end
 
 for round_data in game["rounds"]

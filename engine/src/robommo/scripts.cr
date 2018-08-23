@@ -6,9 +6,9 @@ class Script
     @cmd = cmd
   end
 
-  def run(state, entity) : Array(Action)
+  def run(state, entity) : Array(Actions::PlayerAction)
     # print "Calling #{@cmd} with #{state.to_json}"
-    result = [] of Action
+    result = [] of Actions::PlayerAction
 
     Process.run(@cmd) do |process|
       if !process.terminated?
@@ -24,16 +24,16 @@ class Script
           result << action.new(entity)
         else
           STDERR.puts "Errors: #{errors}"
-          result << Action::ProgramError.new(entity)
+          result << Actions::ProgramError.new(entity)
         end
       else
         # puts "Process crashed"
-        result << Action::ProgramError.new(entity)
+        result << Actions::ProgramError.new(entity)
       end
     end
 
     if result.empty?
-      result << Action::Nothing.new(entity)
+      result << Actions::Nothing.new(entity)
     end
 
     result
@@ -42,35 +42,35 @@ class Script
   def find_action_class(string)
     case string
     when "nothing"
-      Action::Nothing
+      Actions::Nothing
     when "move_north"
-      Action::MoveNorth
+      Actions::MoveNorth
     when "move_east"
-      Action::MoveEast
+      Actions::MoveEast
     when "move_south"
-      Action::MoveSouth
+      Actions::MoveSouth
     when "move_west"
-      Action::MoveWest
+      Actions::MoveWest
     when "duck"
-      Action::Duck
+      Actions::Duck
     when "melee_north"
-      Action::MeleeNorth
+      Actions::MeleeNorth
     when "melee_east"
-      Action::MeleeEast
+      Actions::MeleeEast
     when "melee_south"
-      Action::MeleeSouth
+      Actions::MeleeSouth
     when "melee_west"
-      Action::MeleeWest
+      Actions::MeleeWest
     when "ranged_north"
-      Action::RangedNorth
+      Actions::RangedNorth
     when "ranged_east"
-      Action::RangedEast
+      Actions::RangedEast
     when "ranged_south"
-      Action::RangedSouth
+      Actions::RangedSouth
     when "ranged_west"
-      Action::RangedWest
+      Actions::RangedWest
     else
-      Action::Nothing
+      Actions::Nothing
     end
   end
 

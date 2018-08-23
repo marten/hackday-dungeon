@@ -10,7 +10,7 @@ class GameEngine
     world = @match.map.to_world
     round = Round.new(0, world)
     @match.players.each do |player|
-      action = Action::Spawn.new(player)
+      action = Actions::Spawn.new(player)
       round.process_action(action)
     end
     @match.add_round(round)
@@ -36,7 +36,10 @@ class Map
   end
 
   def to_world
-    World.new(@width, @height)
+    world = World.new(@width, @height)
+    world.update_entity(Wall.new(UUID.random, Coord.new(2, 3)))
+    world.update_entity(Wall.new(UUID.random, Coord.new(7, 1)))
+    world
   end
 end
 
@@ -84,7 +87,7 @@ class Round
     @world.entities
   end
 
-  def process_action(action : Action)
+  def process_action(action : Actions::Base)
     new_events = action.act(@world)
     @events.concat(new_events)
   end

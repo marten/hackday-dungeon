@@ -14,8 +14,10 @@ abstract class Entity
 
   property id : ID
   property coord : Coord
+  property what : String
 
-  def initialize(@id : ID, @coord)
+  def initialize(@id : ID, @coord : Coord)
+    @what = self.class.to_s
   end
 
   abstract def next_actions(world : World) : Array(Action)
@@ -35,6 +37,24 @@ abstract class Entity
   def dead?
     true
   end
+end
+
+class Wall < Entity
+  def next_actions(world)
+    [] of Actions::Base
+  end
+
+  def clone
+    self.class.new(id, coord)
+  end
+end
+
+# Kills anything that steps on it
+class PitOfDoom
+end
+
+# Restores health
+class BlockOfCheese
 end
 
 class Player < Entity
@@ -66,8 +86,12 @@ class Player < Entity
     @ranged_weapon
   end
 
-  def collides_with?
-    !dead?
+  def collides_with?(other)
+    if other.is_a?(Player)
+      other.alive?
+    else
+      true
+    end
   end
 
   def dead?
@@ -82,8 +106,8 @@ class Player < Entity
     Player.new(@id, @coord, @script, health, ducked)
   end
 
-  def next_actions(world) : Array(Action)
-    return [] of Action if dead?
+  def next_actions(world) : Array(Actions::PlayerAction)
+    return [] of Actions::PlayerAction if dead?
 
     @script.run(world, self)
   end
