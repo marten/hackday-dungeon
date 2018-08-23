@@ -3,7 +3,7 @@ require "./events"
 
 abstract class Action
   COLLISION_DAMAGE = 10
-  OUT_OF_BOUNDS_DAMAGE = 5
+  OUT_OF_BOUNDS_DAMAGE = 50
 
   def initialize(@entity : Entity)
   end
@@ -39,18 +39,26 @@ abstract class Action
       entities_at_destination = world.at(coord)
       collider = entities_at_destination.find { |other| entity.collides_with?(other) }
 
+      events = [] of GameEvent
+
       if coord.inside?(world)
         if collider
           entity.health = entity.health - COLLISION_DAMAGE
-          [GameEvent::Collision.new(entity, collider, COLLISION_DAMAGE)]
+          events << GameEvent::Collision.new(entity, collider, COLLISION_DAMAGE)
         else
           entity.move_to(coord)
-          [GameEvent::Move.new(entity, from, coord)]
+          events << GameEvent::Move.new(entity, from, coord)
         end
       else
         entity.health = entity.health - OUT_OF_BOUNDS_DAMAGE
-        [GameEvent::OutOfBounds.new(entity, OUT_OF_BOUNDS_DAMAGE)]
+        events << GameEvent::OutOfBounds.new(entity, OUT_OF_BOUNDS_DAMAGE)
       end
+
+      if entity.dead?
+        events << GameEvent::Death.new(entity, entity)
+      end
+
+      events
     end
   end
 
@@ -99,7 +107,7 @@ abstract class Action
         hit_entities = yield(coord)
 
         if hit_entities.any?
-          hit_entity = hit_entities.first
+          hit_entity = find_first_hit(hit_entities)
           coords << coord
 
           if hit_entity.is_a?(Player)
@@ -119,6 +127,8 @@ abstract class Action
 
       ([T.new(@entity, coords, hits)] of GameEvent).concat(deaths)
     end
+    
+    abstract def find_first_hit(hit_entities)
   end
 
   abstract class Melee < AttackAction(GameEvent::Melee)
@@ -127,6 +137,10 @@ abstract class Action
         world.at(coord)
       end
     end
+    
+    def find_first_hit(hit_entities)
+      hit_entities.find { |ent| ent.alive? }
+    end
   end
 
   abstract class Ranged < AttackAction(GameEvent::Ranged)
@@ -134,6 +148,10 @@ abstract class Action
       attack_with(world, aimed_coords, entity.ranged_weapon) do |coord|
         world.hitscan(@entity.coord, coord)
       end
+    end
+    
+    def find_first_hit(hit_entities)
+      hit_entities.find { |ent| ent.alive? && !ent.ducked? }
     end
   end
 

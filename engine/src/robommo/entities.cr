@@ -19,13 +19,20 @@ abstract class Entity
   end
 
   abstract def next_actions(world : World) : Array(Action)
-  abstract def to_s
 
   def move_to(coord : Coord)
     @coord = coord
   end
 
   def collides_with?(other)
+    true
+  end
+
+  def alive?
+    !dead?
+  end
+
+  def dead?
     true
   end
 end
@@ -59,8 +66,16 @@ class Player < Entity
     @ranged_weapon
   end
 
+  def collides_with?
+    !dead?
+  end
+
   def dead?
     @health <= 0
+  end
+
+  def ducked?
+    @ducked
   end
 
   def clone
