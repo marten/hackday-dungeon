@@ -64,10 +64,11 @@ class GameEvent
     end
   end
 
-  alias MeleeHit = {entity: ID, damage: Int32}
 
   class Melee < GameEvent
-    def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(MeleeHit))
+    alias Hit = {entity: ID, damage: Int32}
+
+    def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(Hit))
     end
 
     def as_json
@@ -75,10 +76,11 @@ class GameEvent
     end
   end
 
-  alias RangedHit = {entity: ID, damage: Int32}
 
   class Ranged < GameEvent
-    def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(MeleeHit))
+    alias Hit = {entity: ID, damage: Int32}
+
+    def initialize(@entity : Entity, @coords : Array(Coord), @hits : Array(Hit))
     end
 
     def as_json

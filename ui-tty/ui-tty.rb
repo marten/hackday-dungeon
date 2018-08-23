@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 
 require 'bundler/inline'
 require 'json'
@@ -14,7 +15,7 @@ cursor = TTY::Cursor
 
 BOT_SYMBOL = '🤺'.freeze
 
-game = JSON.parse(STDIN.read)
+game = JSON.parse(ARGF.read)
 
 class World
   attr_reader :world
@@ -87,6 +88,10 @@ class Event
     @data = data
   end
 
+  def [](key)
+    @data[key]
+  end
+
   def type
     @data['type']
   end
@@ -117,19 +122,24 @@ for round_data in game["rounds"]
 
   table = TTY::Table.new(room)
   puts "\e[H\e[2J"
-  puts round.number
+  puts "Round: #{round.number}, initial state"
   puts table.render :unicode
+  sleep 2
 
-  round.events.each do |event|
+  round.events.each_with_index do |event, idx|
     begin
+      puts "\e[H\e[2J"
+      puts "Round: #{round.number}, event: #{idx}"
+
       case event.type
+      when 'spawn'
+        row, col = event['at']['y'], event['at']['x']
+        table[row][col] = 'XX'
       when 'ranged'
         row, col = event.entity.row_col
         table[row][col] = '🏹'
       end
 
-      puts "\e[H\e[2J"
-      puts round.number
       puts table.render :unicode
       ap event.data
       sleep 2

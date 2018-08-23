@@ -1,4 +1,5 @@
 require "json"
+require "./events"
 
 abstract class Action
   COLLISION_DAMAGE = 10
@@ -116,33 +117,53 @@ abstract class Action
     def act(world)
       if entity.is_a? Player
         entity.ducked = true
+        [GameEvent::Duck.new(entity)]
+      else
+        [] of GameEvent
       end
-      [] of GameEvent
     end
   end
 
-  abstract class Melee < Action
-    def attack(world, aimed_coords)
+  abstract class AttackAction(T) < Action
+    def attack_with(world, aimed_coords)
       coords = [] of Coord
-      hits = [] of GameEvent::MeleeHit
-
+      hits = [] of T::Hit
 
       aimed_coords.each do |coord|
-        hit_entities = world.at(coord)
-        coords << coord
+        hit_entities = yield(coord)
 
         if hit_entities.any?
           hit_entity = hit_entities.first
+          coords << coord
 
           if hit_entity.is_a?(Player)
             damage = entity.melee_weapon.damage
             hit_entity.health -= damage
             hits << {entity: hit_entity.id, damage: damage}
           end
+        else
+          coords << coord
         end
       end
 
-      [GameEvent::Melee.new(@entity, coords, hits)]
+      [T.new(@entity, coords, hits)]
+    end
+  end
+
+
+  abstract class Melee < AttackAction(GameEvent::Melee)
+    def attack(world, aimed_coords)
+      attack_with(world, aimed_coords) do |coord|
+        world.at(coord)
+      end
+    end
+  end
+
+  abstract class Ranged < AttackAction(GameEvent::Ranged)
+    def attack(world, aimed_coords : Array(Coord))
+      attack_with(world, aimed_coords) do |coord|
+        world.hitscan(@entity.coord, coord)
+      end
     end
   end
 
@@ -171,32 +192,6 @@ abstract class Action
     def act(world)
       coords = entity.melee_weapon.aim_west(world, @entity.coord)
       attack(world, coords)
-    end
-  end
-
-  abstract class Ranged < Action
-    def attack(world, aimed_coords : Array(Coord))
-      coords = [] of Coord
-      hits = [] of GameEvent::RangedHit
-
-      aimed_coords.each do |coord|
-        hit_entities = world.hitscan(@entity.coord, coord)
-
-        if hit_entities.any?
-          hit_entity = hit_entities.first
-          coords << hit_entity.coord
-
-          if hit_entity.is_a?(Player)
-            damage = entity.ranged_weapon.damage
-            hit_entity.health -= damage
-            hits << {entity: hit_entity.id, damage: damage}
-          end
-        else
-          coords << coord
-        end
-      end
-
-      [GameEvent::Ranged.new(@entity, coords, hits)]
     end
   end
 
